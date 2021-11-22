@@ -1,4 +1,3 @@
-from config import canvas_width, canvas_height
 from Bar import swap, generate_bars
 from time import sleep
 import config
@@ -6,34 +5,33 @@ import pygame
 import threading
 
 is_drawing = False
-pass_delay = 30
 draw_thread = threading.Thread()
 
 
+def clear(surface):
+    rect = pygame.rect.Rect(0, 0, config.canvas_width, config.canvas_height)
+    pygame.draw.rect(surface, (0, 0, 0), rect)
+    pygame.display.flip()
+
+
 def draw_bars(arr, surface):
-    bars_changed = []
-    bar_group = pygame.sprite.Group()
+    rectangles_changed = []
+    changed_bars = pygame.sprite.Group()
 
     for bar in arr:
         if bar.is_changed:
-            bars_changed.append(pygame.Rect(bar.rect.x, 0, bar.rect.width, canvas_height))
-            bar.is_changed = False
+            rect = pygame.Rect(bar.rect.x, 0, bar.rect.width, config.canvas_height)  # take the entire section of the
+            # section occupied by the bar
 
-    bar_group.add(arr)
+            rectangles_changed.append(rect)  # add to update section of screen
+            pygame.draw.rect(surface, (0, 0, 0), rect)  # clear part of screen of rect
 
-    pygame.draw.rect(surface, (0, 0, 0), pygame.rect.Rect((0, 0), (canvas_width, canvas_height)))
-    bar_group.draw(surface)
-    pygame.display.update(bars_changed)
-    sleep(1 / pass_delay)
+            changed_bars.add(bar)  # add sprite to group for drawing
+            bar.is_changed = False  # bar will be updated, so is_changed is reset
 
-
-def reset_bars(arr, surface):
-    bar_group = pygame.sprite.Group()
-    bar_group.add(arr)
-    pygame.draw.rect(surface, (0, 0, 0), pygame.rect.Rect((0, 0), (canvas_width, canvas_height)))
-    bar_group.draw(surface)
-    pygame.display.flip()
-    sleep(1 / pass_delay)
+    changed_bars.draw(surface)  # draw sprites
+    pygame.display.update(rectangles_changed)  # update only changed sections
+    sleep(1 / pass_delay)  # user delay
 
 
 def draw_merge_sort(arr, surface):
@@ -58,6 +56,9 @@ def draw_merge_sort(arr, surface):
 
             # Copy data to temp arrays L[] and R[]
             while i < len(L) and j < len(R):
+                if not is_drawing:
+                    return
+
                 if L[i].value < R[j].value:
                     arr[k] = L[i]
                     i += 1
@@ -75,23 +76,29 @@ def draw_merge_sort(arr, surface):
 
             # Checking if any element was left
             while i < len(L):
+                if not is_drawing:
+                    return
+
                 arr[k] = L[i]
                 arr[k].position = start + k
                 arr[k].update_position()
                 arr[k].passed()
 
-                draw_bars([arr[k]], surface)
+                draw_bars(arr, surface)
 
                 i += 1
                 k += 1
 
             while j < len(R):
+                if not is_drawing:
+                    return
+
                 arr[k] = R[j]
                 arr[k].position = start + k
                 arr[k].update_position()
                 arr[k].passed()
 
-                draw_bars([arr[k]], surface)
+                draw_bars(arr, surface)
 
                 j += 1
                 k += 1
@@ -103,14 +110,13 @@ def draw_merge_sort(arr, surface):
 
 
 def draw_bubble_sort(arr, surface):
-    global pass_delay
-
-    swaps = 1
     arr_len = len(arr)
-    while swaps != 0:
-        swaps = 0
-        [bar.default() for bar in arr]
-        reset_bars(arr, surface)
+    swapped = True
+
+    while swapped:
+        swapped = False
+        [bar.default() for bar in arr]  # new pass, set bars to default colour
+        draw_bars(arr, surface)
         for i in range(arr_len - 1):
             if not is_drawing:
                 return
@@ -118,29 +124,25 @@ def draw_bubble_sort(arr, surface):
             if arr[i].value > arr[i + 1].value:
                 swap(arr[i], arr[i + 1])
 
-                temp = arr[i + 1]
-                arr[i + 1] = arr[i]
-                arr[i] = temp
+                arr[i], arr[i + 1] = arr[i + 1], arr[i]
 
-                swaps += 1
+                swapped = True
             else:
                 arr[i].passed()
                 arr[i + 1].passed()
 
-            draw_bars([arr[i], arr[i + 1]], surface)
+            draw_bars(arr, surface)
 
 
 def draw_selection_sort(arr, surface):
-    global is_drawing
-
     arr_len = len(arr)
     selected = arr[0]
 
     for i in range(arr_len):
         [bar.default() for bar in arr if not bar.is_passed]
-        reset_bars(arr, surface)
+        draw_bars(arr, surface)
         min_idx = i
-        arr[i].pivot()
+        arr[i].selected()
 
         for j in range(i + 1, arr_len):
             if not is_drawing:
@@ -149,7 +151,7 @@ def draw_selection_sort(arr, surface):
                 arr[min_idx].swapped()
                 arr[j].selected()
                 min_idx = j
-                reset_bars(arr, surface)
+                draw_bars(arr, surface)
 
                 if selected.position >= i + 1:
                     selected.swapped()
@@ -169,7 +171,6 @@ def draw_selection_sort(arr, surface):
 
 
 def partition(start, end, array, screen):
-    global is_drawing, pass_delay
     # Initializing pivot's index to start
     pivot_index = start
     pivot = array[pivot_index].value
@@ -185,7 +186,7 @@ def partition(start, end, array, screen):
             if not is_drawing:
                 return
             array[start].passed()
-            draw_bars([array[start]], screen)
+            draw_bars(array, screen)
             start += 1
 
         # Decrement the end pointer till it finds an
@@ -194,7 +195,7 @@ def partition(start, end, array, screen):
             if not is_drawing:
                 return
             array[end].passed()
-            draw_bars([array[end]], screen)
+            draw_bars(array, screen)
             end -= 1
 
         # If start and end have not crossed each other,
@@ -202,7 +203,7 @@ def partition(start, end, array, screen):
         if start < end:
             swap(array[start], array[end])
             array[start], array[end] = array[end], array[start]
-            draw_bars([array[start], array[end]], screen)
+            draw_bars(array, screen)
 
     # Swap pivot element with element on end pointer.
     # This puts pivot on its correct sorted place.
@@ -210,7 +211,7 @@ def partition(start, end, array, screen):
     array[end], array[pivot_index] = array[pivot_index], array[end]
     array[pivot_index].default()
     array[end].pivot()
-    draw_bars([array[end], array[pivot_index]], screen)
+    draw_bars(array, screen)
 
     # Returning end pointer to divide the array into 2
     return end
@@ -227,7 +228,7 @@ def draw_quick_sort_helper(start, end, array, surface):
         # is at right place
         p = partition(start, end, array, surface)
         [bar.default() for bar in array]
-        reset_bars(array, surface)
+        draw_bars(array, surface)
 
         # Sort elements before partition
         # and after partition
@@ -239,13 +240,108 @@ def draw_quick_sort_helper(start, end, array, surface):
         draw_quick_sort_helper(p + 1, end, array, surface)
 
         [bar.default() for bar in array]
-        reset_bars(array, surface)
+        draw_bars(array, surface)
+
+
+def draw_insertion_sort(arr, surface):
+    # Traverse through 1 to len(arr)
+    for i in range(1, len(arr)):
+        [bar.default() for bar in arr]
+        key_value = arr[i].value
+        arr[i].passed()
+
+        # Move elements of arr[0..i-1], that are
+        # greater than key, to one position ahead
+        # of their current position
+        j = i - 1
+
+        while j >= 0 and key_value < arr[j].value:
+            if not is_drawing:
+                return
+
+            arr[j + 1].update_value(arr[j].value)
+            arr[j + 1].swapped()
+            j -= 1
+            draw_bars(arr, surface)
+
+        arr[j + 1].update_value(key_value)
+        arr[j + 1].passed()
+        draw_bars(arr, surface)
+        [bar.default() for bar in arr]
+        draw_bars(arr, surface)
+
+
+def draw_cocktail_sort(a, surface):
+    n = len(a)
+    swapped = True
+    start = 0
+    end = n - 1
+    while swapped:
+
+        # reset the swapped flag on entering the loop,
+        # because it might be true from a previous
+        # iteration.
+        swapped = False
+
+        # loop from left to right same as the bubble
+        # sort
+        for i in range(start, end):
+            if not is_drawing:
+                return
+
+            if a[i].value > a[i + 1].value:
+                swap(a[i], a[i + 1])
+
+                a[i], a[i + 1] = a[i + 1], a[i]
+
+                swapped = True
+            else:
+                a[i].passed()
+                a[i + 1].passed()
+            draw_bars(a, surface)
+
+        # if nothing moved, then array is sorted.
+        if not swapped:
+            break
+
+        # otherwise, reset the swapped flag so that it
+        # can be used in the next stage
+        swapped = False
+
+        # move the end point back by one, because
+        # item at the end is in its rightful spot
+        end = end - 1
+
+        # from right to left, doing the same
+        # comparison as in the previous stage
+        for i in range(end - 1, start - 1, -1):
+            if not is_drawing:
+                return
+
+            if a[i].value > a[i + 1].value:
+                swap(a[i], a[i + 1])
+
+                a[i], a[i + 1] = a[i + 1], a[i]
+
+                swapped = True
+            else:
+                a[i].passed()
+                a[i + 1].passed()
+            draw_bars(a, surface)
+
+        # increase the starting point, because
+        # the last stage would have moved the next
+        # smallest number to its rightful spot.
+        start = start + 1
+        draw_bars(a, surface)
+        [bar.default() for bar in a]
+        draw_bars(a, surface)
 
 
 def start_draw(algorithm_list, surface, speed_slider, num_values_slider):
     global is_drawing, pass_delay, draw_thread
 
-    if is_drawing:
+    if is_drawing:  # if already drawing, do nothing
         return
 
     is_drawing = True
@@ -256,7 +352,8 @@ def start_draw(algorithm_list, surface, speed_slider, num_values_slider):
     config.num_values = round(num_values_slider.get_value())
 
     bar_array = generate_bars()
-    reset_bars(bar_array, surface)
+    clear(surface)
+    draw_bars(bar_array, surface)
 
     if algorithm_string == "Quicksort":
         func = draw_quick_sort
@@ -266,6 +363,10 @@ def start_draw(algorithm_list, surface, speed_slider, num_values_slider):
         func = draw_selection_sort
     elif algorithm_string == "Merge Sort":
         func = draw_merge_sort
+    elif algorithm_string == "Insertion Sort":
+        func = draw_insertion_sort
+    elif algorithm_string == "Cocktail Sort":
+        func = draw_cocktail_sort
     else:
         is_drawing = False
         return
@@ -290,5 +391,5 @@ def stop_draw():
 def restart_draw(algorithm_list, surface, speed_slider, num_values_slider):
     global is_drawing, draw_thread
     stop_draw()
-    draw_thread.join()
+    draw_thread.join()  # wait for drawing to finish at a safe stage
     start_draw(algorithm_list, surface, speed_slider, num_values_slider)
