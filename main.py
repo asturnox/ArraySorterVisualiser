@@ -14,21 +14,21 @@ def user_check_input_loop(menu):
             menu.react(event)
 
     while True:
-        user_check_input()
+        user_check_input()  # always check for user interaction
 
 
 def main():
     pygame.init()
 
     screen = pygame.display.set_mode((canvas_width + side_menu_width, max(canvas_height, side_menu_height)))
-    screen.convert()
+    screen.convert()  # convert screen for successive drawing
     pygame.display.set_caption("Array Sorter Visualiser")
 
-    speed_slider = thorpy.SliderX(100, (5, 120), "Speed (fps)", initial_value=30)
-
+    speed_slider = thorpy.SliderX(100, (5, 400), "Speed (fps)", initial_value=30)
     num_values_slider = thorpy.SliderX(100, (2, 200), "Bars", initial_value=20)
 
-    algorithm_string_list = ["Quicksort", "Bubble Sort", "Selection Sort", "Merge Sort"]
+    algorithm_string_list = ["Quicksort", "Bubble Sort", "Selection Sort", "Merge Sort", "Insertion Sort",
+                             "Cocktail Sort"]
     algorithm_list = thorpy.DropDownListLauncher(const_text="Choose: ", titles=algorithm_string_list)
     algorithm_list.scale_to_title()
 
@@ -36,7 +36,7 @@ def main():
 
     params_map = {"algorithm_list": algorithm_list, "surface": screen,
                   "speed_slider": speed_slider,
-                  "num_values_slider": num_values_slider}
+                  "num_values_slider": num_values_slider}  # parameters to pass to buttons
 
     start = thorpy.make_button("Start", func=start_draw,
                                params=params_map)
@@ -49,14 +49,14 @@ def main():
 
     box = thorpy.Box(
         elements=[menu_text, speed_slider, num_values_slider, start, stop, restart, algorithm_list, quit_button])
-    box.fit_children(margins=(10, 10))
+    box.fit_children(margins=(10, 10))  # we want large margins
 
-    background = thorpy.Background(elements=[box], color=(0, 0, 0))
+    background = thorpy.Background(elements=[box], color=(0, 0, 0))  # set background colour to black
     menu = thorpy.Menu(elements=[background])
     for element in menu.get_population():
         element.surface = screen
 
-    user_thread = threading.Thread(target=user_check_input_loop, args=(menu,))
+    user_thread = threading.Thread(target=user_check_input_loop, args=(menu,))  # check if user interacts
     user_thread.setDaemon(True)
     user_thread.start()
 
@@ -69,8 +69,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
