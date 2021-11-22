@@ -5,5 +5,3 @@ side_menu_width = 260
 side_menu_height = canvas_height
 
 num_values = 100
-
-
