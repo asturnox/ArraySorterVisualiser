@@ -1,3 +1,9 @@
+"""
+Defines global configuration for application.
+
+NOTE: num_values can be changed by the user.
+"""
+
 canvas_width = 1280
 canvas_height = 768
 

@@ -1,12 +1,16 @@
 import sys
+import threading
+
 import pygame
 import thorpy
-import threading
-from config import *
+
 from algorithms import start_draw, stop_draw, restart_draw
+from config import *
 
 
 def user_check_input_loop(menu):
+    """Continually checks for user input on a separate thread, reacts accordingly"""
+
     def user_check_input():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -18,8 +22,12 @@ def user_check_input_loop(menu):
 
 
 def main():
+    """
+    Main application loop, initialises and places GUI elements
+    """
     pygame.init()
 
+    # create screen
     screen = pygame.display.set_mode((canvas_width + side_menu_width, max(canvas_height, side_menu_height)))
     screen.convert()  # convert screen for successive drawing
     pygame.display.set_caption("Array Sorter Visualiser")
@@ -28,7 +36,8 @@ def main():
     num_values_slider = thorpy.SliderX(100, (2, 200), "Bars", initial_value=20)
 
     algorithm_string_list = ["Quicksort", "Bubble Sort", "Selection Sort", "Merge Sort", "Insertion Sort",
-                             "Cocktail Sort"]
+                             "Cocktail Sort"]  # algorithm list
+    # algorithm selection
     algorithm_list = thorpy.DropDownListLauncher(const_text="Choose: ", titles=algorithm_string_list)
     algorithm_list.scale_to_title()
 
@@ -38,12 +47,12 @@ def main():
                   "speed_slider": speed_slider,
                   "num_values_slider": num_values_slider}  # parameters to pass to buttons
 
-    start = thorpy.make_button("Start", func=start_draw,
+    start = thorpy.make_button("Start", func=start_draw,  # start button
                                params=params_map)
 
-    stop = thorpy.make_button("Stop", func=stop_draw)
+    stop = thorpy.make_button("Stop", func=stop_draw)  # stop button
 
-    restart = thorpy.make_button("Restart", func=restart_draw, params=params_map)
+    restart = thorpy.make_button("Restart", func=restart_draw, params=params_map)  # restart button
 
     quit_button = thorpy.make_button("Quit", func=sys.exit, params=0)
 

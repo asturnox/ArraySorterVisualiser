@@ -1,25 +1,98 @@
-from Bar import swap, generate_bars
-from time import sleep
-import config
-import pygame
 import threading
+from time import sleep
+
+import pygame
+
+import config
+from Bar import swap, generate_bars
 
 is_drawing = False
 draw_thread = threading.Thread()
 
+"""
+Contains all sorting algorithms as well as the logic needed to display them.
+"""
+
+
+def start_draw(algorithm_list, surface, speed_slider, num_values_slider):
+    """Selects the sorting algorithm to use based on user input and runs it"""
+    global is_drawing, pass_delay, draw_thread
+
+    if is_drawing:  # if already drawing, do nothing
+        return
+
+    is_drawing = True
+
+    algorithm_string = algorithm_list.get_value()
+
+    pass_delay = round(speed_slider.get_value())
+    config.num_values = round(num_values_slider.get_value())
+
+    bar_array = generate_bars()
+    clear(surface)
+    draw_bars(bar_array, surface)
+
+    if algorithm_string == "Quicksort":
+        func = draw_quick_sort
+    elif algorithm_string == "Bubble Sort":
+        func = draw_bubble_sort
+    elif algorithm_string == "Selection Sort":
+        func = draw_selection_sort
+    elif algorithm_string == "Merge Sort":
+        func = draw_merge_sort
+    elif algorithm_string == "Insertion Sort":
+        func = draw_insertion_sort
+    elif algorithm_string == "Cocktail Sort":
+        func = draw_cocktail_sort
+    else:
+        is_drawing = False
+        return
+
+    draw_thread = threading.Thread(target=start_draw_helper, args=(func, bar_array, surface))
+    draw_thread.setDaemon(True)
+    draw_thread.start()
+
+
+def start_draw_helper(func, bar_array, surface):
+    """Helper used to set the is_drawing flag to false when done drawing"""
+    global is_drawing
+    func(bar_array, surface)
+
+    is_drawing = False
+
+
+def stop_draw():
+    global is_drawing
+    is_drawing = False
+
+
+def restart_draw(algorithm_list, surface, speed_slider, num_values_slider):
+    global is_drawing, draw_thread
+    stop_draw()
+    draw_thread.join()  # wait for drawing to finish at a safe stage
+    start_draw(algorithm_list, surface, speed_slider, num_values_slider)
+
 
 def clear(surface):
+    """Clears entire surface to default colour and updates it"""
     rect = pygame.rect.Rect(0, 0, config.canvas_width, config.canvas_height)
     pygame.draw.rect(surface, (0, 0, 0), rect)
     pygame.display.flip()
 
 
 def draw_bars(arr, surface):
+    """Updates bar sections of the surface that have changed.
+
+    Parameters
+    ----------
+    :param arr: Bar array
+    :param surface: surface to draw to
+    """
     rectangles_changed = []
     changed_bars = pygame.sprite.Group()
 
     for bar in arr:
-        if bar.is_changed:
+        if bar.is_changed:  # update only sections that have changed
             rect = pygame.Rect(bar.rect.x, 0, bar.rect.width, config.canvas_height)  # take the entire section of the
             # section occupied by the bar
 
@@ -33,6 +106,8 @@ def draw_bars(arr, surface):
     pygame.display.update(rectangles_changed)  # update only changed sections
     sleep(1 / pass_delay)  # user delay
 
+
+# algorithm implementations are found below this point
 
 def draw_merge_sort(arr, surface):
     def draw_merge_sort_helper(arr, start, surface):
@@ -139,7 +214,7 @@ def draw_selection_sort(arr, surface):
     selected = arr[0]
 
     for i in range(arr_len):
-        [bar.default() for bar in arr if not bar.is_passed]
+        [bar.default() for bar in arr]
         draw_bars(arr, surface)
         min_idx = i
         arr[i].selected()
@@ -336,60 +411,3 @@ def draw_cocktail_sort(a, surface):
         draw_bars(a, surface)
         [bar.default() for bar in a]
         draw_bars(a, surface)
-
-
-def start_draw(algorithm_list, surface, speed_slider, num_values_slider):
-    global is_drawing, pass_delay, draw_thread
-
-    if is_drawing:  # if already drawing, do nothing
-        return
-
-    is_drawing = True
-
-    algorithm_string = algorithm_list.get_value()
-
-    pass_delay = round(speed_slider.get_value())
-    config.num_values = round(num_values_slider.get_value())
-
-    bar_array = generate_bars()
-    clear(surface)
-    draw_bars(bar_array, surface)
-
-    if algorithm_string == "Quicksort":
-        func = draw_quick_sort
-    elif algorithm_string == "Bubble Sort":
-        func = draw_bubble_sort
-    elif algorithm_string == "Selection Sort":
-        func = draw_selection_sort
-    elif algorithm_string == "Merge Sort":
-        func = draw_merge_sort
-    elif algorithm_string == "Insertion Sort":
-        func = draw_insertion_sort
-    elif algorithm_string == "Cocktail Sort":
-        func = draw_cocktail_sort
-    else:
-        is_drawing = False
-        return
-
-    draw_thread = threading.Thread(target=start_draw_helper, args=(func, bar_array, surface))
-    draw_thread.setDaemon(True)
-    draw_thread.start()
-
-
-def start_draw_helper(func, bar_array, surface):
-    global is_drawing
-    func(bar_array, surface)
-
-    is_drawing = False
-
-
-def stop_draw():
-    global is_drawing
-    is_drawing = False
-
-
-def restart_draw(algorithm_list, surface, speed_slider, num_values_slider):
-    global is_drawing, draw_thread
-    stop_draw()
-    draw_thread.join()  # wait for drawing to finish at a safe stage
-    start_draw(algorithm_list, surface, speed_slider, num_values_slider)
