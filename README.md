@@ -17,7 +17,7 @@ Currently Supported algorithms are:
 ![Merge Sort](https://media.giphy.com/media/7oBauv3v5U6anOkAkR/giphy.gif)
 
 ### Example #2 - Cocktail Sort
-![Cocktail Sort](https://media.giphy.com/media/7oBauv3v5U6anOkAkR/giphy.gif)
+![Cocktail Sort](https://media.giphy.com/media/GTwAIH2y9eyrue5hqK/giphy.gif)
 
 ### Example #3 - Bubble Sort
 ![Bubble Sort](https://media.giphy.com/media/vLCEAlZ5rZdYF0D3yu/giphy.gif)
